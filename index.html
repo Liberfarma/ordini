@@ -2,9 +2,10 @@
 <html lang="it">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Liberfarma">
+<meta name="theme-color" content="#1a6b3c">
 <title>Liberfarma — Raccolta Ordini</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Serif+Display&display=swap" rel="stylesheet">
 <style>
@@ -16,7 +17,7 @@
 }
 html, body { height:100%; overflow:hidden; }
 body { font-family:'DM Sans',sans-serif; background:#333; color:var(--text); display:flex; justify-content:center; }
-.app { width:100%; max-width:430px; height:100vh; background:var(--white); display:flex; flex-direction:column; overflow:hidden; }
+.app { width:100%; max-width:430px; height:100vh; height:100dvh; background:var(--white); display:flex; flex-direction:column; overflow:hidden; }
 .header { background:var(--green); padding:18px 20px 24px; flex-shrink:0; }
 .header-top { display:flex; align-items:center; justify-content:space-between; margin-bottom:4px; }
 .logo { font-family:'DM Serif Display',serif; color:white; font-size:22px; }
@@ -78,7 +79,7 @@ input:focus { outline:none; border-color:var(--green); }
 .recap-row:last-child { border-bottom:none; padding-bottom:0; }
 .recap-key { color:var(--muted); font-size:12px; }
 .recap-val { font-weight:600; text-align:right; max-width:60%; }
-.bottom-bar { flex-shrink:0; background:var(--white); border-top:1px solid var(--border); padding:14px 18px; display:flex; gap:10px; }
+.bottom-bar { flex-shrink:0; background:var(--white); border-top:1px solid var(--border); padding:14px 18px; padding-bottom:max(14px, env(safe-area-inset-bottom, 14px)); display:flex; gap:10px; }
 .btn { flex:1; padding:15px; border-radius:13px; border:none; font-family:'DM Sans',sans-serif; font-size:15px; font-weight:600; cursor:pointer; transition:all 0.15s; }
 .btn:active { transform:scale(0.97); }
 .btn-back { background:var(--bg); color:var(--muted); flex:0.38; }
