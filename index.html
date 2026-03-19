@@ -115,6 +115,13 @@ input:focus { outline:none; border-color:var(--green); }
     <div class="section active" id="s0">
       <div class="sec-title">👤 Dati Agente</div>
       <div class="field"><label>Nome Agente</label><input type="text" id="agente" placeholder="Nome e Cognome"></div>
+      <div id="reprint-bar" style="display:none;margin-bottom:16px;background:#f8faf9;border:1.5px solid var(--border);border-radius:12px;padding:12px 14px;display:none;align-items:center;justify-content:space-between;gap:10px">
+        <div>
+          <div style="font-size:11px;font-weight:700;color:var(--green);text-transform:uppercase;letter-spacing:0.5px">Ultimo ordine</div>
+          <div id="reprint-label" style="font-size:13px;color:var(--text);margin-top:2px"></div>
+        </div>
+        <button onclick="ristampa()" style="flex-shrink:0;padding:9px 16px;background:var(--green);color:white;border:none;border-radius:9px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;cursor:pointer">🖨️ Ristampa</button>
+      </div>
       <div class="sec-title">🏥 Dati Cliente</div>
       <div class="field"><label>Data ordine</label><input type="date" id="data_ordine"></div>
       <div class="field"><label>Ragione Sociale</label><input type="text" id="ragione_sociale" placeholder="es. Rossi"></div>
@@ -294,8 +301,16 @@ function loadLastOrder(){
     const raw=localStorage.getItem('lf_last_order');
     if(!raw)return;
     const o=JSON.parse(raw);
+    // Mostra nella success screen
     const el=document.getElementById('last-order-info');
     if(el)el.textContent='Ultimo ordine salvato: '+(o.ragione_sociale||'')+' — '+(o.data||'');
+    // Mostra il banner di ristampa nello step 0
+    const bar=document.getElementById('reprint-bar');
+    const lbl=document.getElementById('reprint-label');
+    if(bar&&lbl){
+      lbl.textContent=(o.ragione_sociale||'—')+' — '+(o.data||'').split('-').reverse().join('/');
+      bar.style.display='flex';
+    }
   }catch(e){}
 }
 
