@@ -63,7 +63,6 @@ input:focus { outline:none; border-color:var(--green); }
 .sconto-num { font-size:40px; font-weight:700; font-family:'DM Serif Display',serif; line-height:1; }
 .sconto-title { font-size:13px; font-weight:600; opacity:0.9; }
 .sconto-sub { font-size:11px; opacity:0.65; margin-top:3px; }
-.alert-box { background:#fff8e6; border:1.5px solid var(--accent); border-radius:11px; padding:13px 14px; font-size:12px; color:#7a5200; margin-bottom:18px; display:flex; gap:9px; }
 .radio-group { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:16px; }
 .radio-card { border:1.5px solid var(--border); border-radius:12px; padding:14px; cursor:pointer; text-align:center; transition:all 0.2s; user-select:none; }
 .radio-card.on { border-color:var(--green); background:var(--green-light); }
@@ -118,7 +117,7 @@ input:focus { outline:none; border-color:var(--green); }
       <div class="field"><label>Nome Agente</label><input type="text" id="agente" placeholder="Nome e Cognome"></div>
       <div class="sec-title">🏥 Dati Cliente</div>
       <div class="field"><label>Data ordine</label><input type="date" id="data_ordine"></div>
-      <div class="field"><label>Ragione Sociale</label><input type="text" id="ragione_sociale" placeholder="es. Farmacia Rossi"></div>
+      <div class="field"><label>Ragione Sociale</label><input type="text" id="ragione_sociale" placeholder="es. Rossi"></div>
       <div class="field"><label>Indirizzo</label><input type="text" id="indirizzo" placeholder="Via, numero, città (prov.)"></div>
       <div class="row2">
         <div class="field"><label>Località</label><input type="text" id="localita" placeholder="es. Lajatico"></div>
@@ -139,11 +138,10 @@ input:focus { outline:none; border-color:var(--green); }
       <div class="sconto-badge">
         <div class="sconto-num">50%</div>
         <div>
-          <div class="sconto-title">Sconto lordo · condizione 10+2</div>
-          <div class="sconto-sub">Min. 1 pz per referenza · sconto sempre garantito</div>
+          <div class="sconto-title">Sconto lordo</div>
+          <div class="sconto-sub">Inserire pezzi pagati e omaggi</div>
         </div>
       </div>
-      
       <div class="sec-title">💧 Colliri</div>
       <div id="colliri"></div>
       <div class="sec-title" style="margin-top:4px">💊 Altri Prodotti</div>
@@ -202,7 +200,6 @@ const ST={step:0,pay:null,termine:null};
 const WEBHOOK='';
 
 function buildCard(p){
-  const omLbl='Omaggi';
   const espHtml=p.collirio?`<div class="esp-row"><div><div class="esp-label">Espositore</div><div class="esp-sub">Da banco</div></div><div class="toggle" id="esp-${p.id}" onclick="event.stopPropagation();togEsp('${p.id}')"></div></div>`:'';
   return `<div class="prod-card" id="c-${p.id}">
     <div class="prod-head" onclick="togProd('${p.id}')">
@@ -213,7 +210,7 @@ function buildCard(p){
     <div class="prod-body" id="b-${p.id}">
       <div class="qty-row">
         <div><div class="qty-label">Pezzi pagati</div><div class="qty-ctrl"><button class="qty-btn" onclick="chQty('${p.id}',-1)">−</button><div class="qty-val" id="pz-${p.id}">0</div><button class="qty-btn" onclick="chQty('${p.id}',+1)">+</button></div></div>
-        <div><div class="qty-label">${omLbl}</div><div class="qty-ctrl"><button class="qty-btn" style="color:var(--accent)" onclick="chOm('${p.id}',-1)">−</button><div class="qty-val" id="om-${p.id}" style="color:var(--green)">0</div><button class="qty-btn" style="color:var(--accent)" onclick="chOm('${p.id}',+1)">+</button></div></div>
+        <div><div class="qty-label">Omaggi</div><div class="qty-ctrl"><button class="qty-btn" style="color:var(--accent)" onclick="chOm('${p.id}',-1)">−</button><div class="qty-val" id="om-${p.id}" style="color:var(--green)">0</div><button class="qty-btn" style="color:var(--accent)" onclick="chOm('${p.id}',+1)">+</button></div></div>
       </div>${espHtml}
     </div>
   </div>`;
@@ -225,7 +222,7 @@ loadLastOrder();
 
 function gp(id){return PRODS.find(p=>p.id===id);}
 function togProd(id){const p=gp(id);p.on=!p.on;document.getElementById('t-'+id).classList.toggle('on',p.on);document.getElementById('c-'+id).classList.toggle('on',p.on);document.getElementById('b-'+id).classList.toggle('open',p.on);}
-function chQty(id,d){const p=gp(id);p.pz=Math.max(0,p.pz+d);document.getElementById('pz-'+id).textContent=p.pz;// omaggi impostati manualmente dall'agente}
+function chQty(id,d){const p=gp(id);p.pz=Math.max(0,p.pz+d);document.getElementById('pz-'+id).textContent=p.pz;}
 function chOm(id,d){const p=gp(id);p.om=Math.max(0,(p.om||0)+d);document.getElementById('om-'+id).textContent=p.om;}
 function togEsp(id){const p=gp(id);p.esp=!p.esp;document.getElementById('esp-'+id).classList.toggle('on',p.esp);}
 function selPay(v){ST.pay=v;['riba','bonifico'].forEach(x=>document.getElementById('pr-'+x).classList.toggle('on',x===v));}
@@ -240,9 +237,8 @@ function buildRecap(){
   let html='';let tot=0;let totpz=0;
   PRODS.forEach(p=>{
     if(!p.on||p.pz===0)return;
-    const sc=p.collirio&&p.pz>=48?(1-8/9*0.5):0.5;
     const om=p.om||0;
-    const val=+(p.pp*(1-sc)*p.pz).toFixed(2);
+    const val=+(p.pp*0.5*p.pz).toFixed(2);
     tot+=val;totpz+=p.pz+om;
     html+=`<div class="recap-row"><span class="recap-key">${p.icon} ${p.name}</span><span class="recap-val">${p.pz}pz +${om}om<br><small style="font-weight:400;color:var(--muted)">€${val.toFixed(2)}</small></span></div>`;
   });
@@ -274,9 +270,8 @@ function render(){
 
 async function submit(){
   const prodotti=PRODS.filter(p=>p.on&&p.pz>0).map(p=>{
-    const sc=p.collirio&&p.pz>=48?(1-8/9*0.5):0.5;
     const om=p.om||0;
-    return{prodotto:p.name,pezzi:p.pz,omaggi:om,cessione:+(p.pp*(1-sc)).toFixed(2),totale:+(p.pp*(1-sc)*p.pz).toFixed(2),espositore:p.esp};
+    return{prodotto:p.name,pezzi:p.pz,omaggi:om,cessione:+(p.pp*0.5).toFixed(2),totale:+(p.pp*0.5*p.pz).toFixed(2),espositore:p.esp};
   });
   const payload={data:document.getElementById('data_ordine').value,agente:document.getElementById('agente').value,ragione_sociale:document.getElementById('ragione_sociale').value,indirizzo:document.getElementById('indirizzo').value,telefono:document.getElementById('telefono').value,email:document.getElementById('email').value,piva:document.getElementById('piva').value,sdi:document.getElementById('sdi').value,iban:document.getElementById('iban').value,localita:document.getElementById('localita').value,provincia:document.getElementById('provincia').value.toUpperCase(),pagamento:ST.pay,termine:ST.termine?ST.termine+' GG FM':'',note:document.getElementById('note').value,prodotti,totale_cessione:prodotti.reduce((s,p)=>s+p.totale,0).toFixed(2)};
   if(!WEBHOOK){showOk(true,payload);return;}
@@ -285,41 +280,37 @@ async function submit(){
   catch(e){alert('Errore di rete. Riprova.');}
   finally{document.getElementById('overlay').classList.remove('show');}
 }
+
 function ristampa(){
-  try {
-    const raw = localStorage.getItem('lf_last_order');
-    if(!raw){ alert('Nessun ordine salvato.'); return; }
-    const o = JSON.parse(raw);
-    stampaPDF(o);
-  } catch(e){ alert('Errore nel recupero ordine.'); }
+  try{
+    const raw=localStorage.getItem('lf_last_order');
+    if(!raw){alert('Nessun ordine salvato.');return;}
+    stampaPDF(JSON.parse(raw));
+  }catch(e){alert('Errore nel recupero ordine.');}
 }
 
 function loadLastOrder(){
-  try {
-    const raw = localStorage.getItem('lf_last_order');
-    if(!raw) return;
-    const o = JSON.parse(raw);
-    const el = document.getElementById('last-order-info');
-    if(el) el.textContent = 'Ultimo ordine salvato: ' + (o.ragione_sociale||'') + ' — ' + (o.data||'');
-  } catch(e){}
+  try{
+    const raw=localStorage.getItem('lf_last_order');
+    if(!raw)return;
+    const o=JSON.parse(raw);
+    const el=document.getElementById('last-order-info');
+    if(el)el.textContent='Ultimo ordine salvato: '+(o.ragione_sociale||'')+' — '+(o.data||'');
+  }catch(e){}
 }
 
 function stampaPDF(o){
-  const prods = (o.prodotti||[]).filter(p=>p.pezzi>0);
-  const righe = prods.map(p=>`
+  const prods=(o.prodotti||[]).filter(p=>p.pezzi>0);
+  const righe=prods.map(p=>`
     <tr>
-      <td style="padding:14px;border-bottom:1px solid #e5e5e5">
-        <div style="font-weight:700;font-size:18px">${p.prodotto}</div>
-      </td>
+      <td style="padding:14px;border-bottom:1px solid #e5e5e5"><div style="font-weight:700;font-size:18px">${p.prodotto}</div></td>
       <td style="padding:14px;border-bottom:1px solid #e5e5e5;text-align:center">${p.pezzi}</td>
       <td style="padding:14px;border-bottom:1px solid #e5e5e5;text-align:center">${p.omaggi||0}</td>
       <td style="padding:14px;border-bottom:1px solid #e5e5e5;text-align:right"><strong>€ ${(p.totale||0).toFixed(2).replace('.',',')}</strong></td>
     </tr>`).join('');
-
-  const pag = o.pagamento==='riba'?'Ri.Ba.':o.pagamento==='bonifico'?'Bonifico':(o.pagamento||'');
-  const termine = o.termine||'';
-
-  const win = window.open('','_blank');
+  const pag=o.pagamento==='riba'?'Ri.Ba.':o.pagamento==='bonifico'?'Bonifico':(o.pagamento||'');
+  const termine=o.termine||'';
+  const win=window.open('','_blank');
   win.document.write(`<!DOCTYPE html><html lang="it"><head><meta charset="UTF-8">
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Serif+Display&display=swap" rel="stylesheet">
   <style>
@@ -360,7 +351,6 @@ function stampaPDF(o){
       <div style="text-align:right"><div class="lbl">Data ordine</div><div class="val">${(o.data||'').split('-').reverse().join('/')}</div></div>
     </div>
   </div>
-
   <div class="section-title">Dati Cliente</div>
   <div class="field"><span class="fl">Ragione Sociale:</span><span class="fv">${o.ragione_sociale||''}</span></div>
   <div class="field"><span class="fl">Indirizzo:</span><span class="fv">${o.indirizzo||''}</span></div>
@@ -369,13 +359,11 @@ function stampaPDF(o){
   <div class="field"><span class="fl">Partita IVA / CF:</span><span class="fv">${o.piva||''}</span></div>
   <div class="field"><span class="fl">SDI:</span><span class="fv">${o.sdi||''}</span></div>
   <div class="field"><span class="fl">IBAN:</span><span class="fv">${o.iban||''}</span></div>
-
   <div class="section-title">Prodotti Ordinati</div>
   <table>
     <tr><th>Prodotto</th><th>Pezzi</th><th>Omaggi</th><th>Imponibile</th></tr>
     ${righe}
   </table>
-
   <div class="section-title">Pagamento</div>
   <div class="pay-row">
     <div class="pay-item"><div class="box">${pag==='Ri.Ba.'?'✕':''}</div> Ri.Ba.</div>
@@ -385,9 +373,7 @@ function stampaPDF(o){
     <div class="pay-item"><div class="box">${termine.includes('30')?'✕':''}</div> 30 GG FM</div>
     <div class="pay-item"><div class="box">${termine.includes('60')?'✕':''}</div> 60 GG FM</div>
   </div>
-
   <div><span class="sconto">Sconto Lordo: 50%</span><span class="importo">Imponibile: <strong>€ ${Number(o.totale_cessione||0).toFixed(2).replace('.',',')}</strong></span></div>
-
   <div class="firma-row">
     <div class="firma-block">Nome e cognome agente<br><br>${o.agente||''}</div>
     <div class="firma-block">Firma agente<br><br>_______________________</div>
@@ -398,13 +384,12 @@ function stampaPDF(o){
   win.document.close();
 }
 
-function showOk(demo, payload){
+function showOk(demo,payload){
   document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
   document.getElementById('success').classList.add('show');
   document.getElementById('bar').style.display='none';
   document.getElementById('success-msg').textContent=demo?'Ordine salvato (modalità demo).':'Ordine registrato nel foglio Google. ✓';
-  // Salva ultimo ordine in localStorage per ristampa
-  if(payload) { try { localStorage.setItem('lf_last_order', JSON.stringify(payload)); } catch(e){} }
+  if(payload){try{localStorage.setItem('lf_last_order',JSON.stringify(payload));}catch(e){}}
 }
 </script>
 </body>
