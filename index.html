@@ -205,7 +205,7 @@ const PRODS = [
 PRODS.forEach(p=>{p.on=false;p.pz=0;p.om=0;p.esp=false;});
 const ST={step:0,pay:null,termine:null};
 // ↓ Incolla qui l'URL della tua Web App Google Apps Script (Distribuisci → URL)
-const WEBHOOK='https://script.google.com/macros/s/AKfycbwLY_crJlEEAcntByj1hk5vXIYq_KwkrNYqJF4pNIfCrE5KGwEwx5LWgC9IUdTj_l7BfQ/exec';
+const WEBHOOK='https://script.google.com/macros/s/AKfycbxYmoABktGdNnyNFQggkVMhGhUt6I8nSXcK6aniC2tuI7UmtcyxHKFPS8XaLS9WuTVk/exec';
 
 function buildCard(p){
   const espHtml=p.collirio?`<div class="esp-row"><div><div class="esp-label">Espositore</div><div class="esp-sub">Da banco</div></div><div class="toggle" id="esp-${p.id}" onclick="event.stopPropagation();togEsp('${p.id}')"></div></div>`:'';
