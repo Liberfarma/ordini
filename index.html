@@ -204,8 +204,9 @@ const PRODS = [
 ];
 PRODS.forEach(p=>{p.on=false;p.pz=0;p.om=0;p.esp=false;});
 const ST={step:0,pay:null,termine:null};
-// ↓ Incolla qui l'URL della tua Web App Google Apps Script (Distribuisci → URL)
-const WEBHOOK='https://script.google.com/macros/s/AKfycbxYmoABktGdNnyNFQggkVMhGhUt6I8nSXcK6aniC2tuI7UmtcyxHKFPS8XaLS9WuTVk/exec';
+
+// ↓ INCOLLA QUI IL NUOVO URL DI GOOGLE SCRIPT
+const WEBHOOK='https://script.google.com/macros/s/AKfycby8cwyQZqC3JSK2Fsjf1lSL4AfzPKbE-9lk-J0TjW_qYC9H_gp_8-NcZzkwfzoiqDo23w/exec';
 
 function buildCard(p){
   const espHtml=p.collirio?`<div class="esp-row"><div><div class="esp-label">Espositore</div><div class="esp-sub">Da banco</div></div><div class="toggle" id="esp-${p.id}" onclick="event.stopPropagation();togEsp('${p.id}')"></div></div>`:'';
@@ -251,7 +252,8 @@ function buildRecap(){
     const om=p.om||0;
     const val=+(p.pp*0.5*p.pz).toFixed(2);
     tot+=val;totpz+=p.pz+om;
-    html+=`<div class="recap-row"><span class="recap-key">${p.icon} ${p.name}</span><span class="recap-val">${p.pz}pz +${om}om<br><small style="font-weight:400;color:var(--muted)">€${val.toFixed(2)}</small></span></div>`;
+    const espNota = p.esp ? '<br><small style="color:var(--green);font-weight:700">+ ESPOSITORE</small>' : '';
+    html+=`<div class="recap-row"><span class="recap-key">${p.icon} ${p.name}${espNota}</span><span class="recap-val">${p.pz}pz +${om}om<br><small style="font-weight:400;color:var(--muted)">€${val.toFixed(2)}</small></span></div>`;
   });
   document.getElementById('recap').innerHTML=`<div style="padding-top:22px">
     <div class="hi-box"><div><div class="hi-label">Totale cessione</div><div class="hi-sub">${totpz} pezzi totali</div></div><div class="hi-val">€${tot.toFixed(2)}</div></div>
@@ -285,20 +287,19 @@ async function submit(){
     return{prodotto:p.name,pezzi:p.pz,omaggi:om,cessione:+(p.pp*0.5).toFixed(2),totale:+(p.pp*0.5*p.pz).toFixed(2),espositore:p.esp};
   });
   const payload={data:document.getElementById('data_ordine').value,agente:document.getElementById('agente').value,ragione_sociale:document.getElementById('ragione_sociale').value,indirizzo:document.getElementById('indirizzo').value,telefono:document.getElementById('telefono').value,email:document.getElementById('email').value,piva:document.getElementById('piva').value,sdi:document.getElementById('sdi').value,iban:document.getElementById('iban').value,localita:document.getElementById('localita').value,provincia:document.getElementById('provincia').value.toUpperCase(),pagamento:ST.pay,termine:ST.termine?ST.termine+' GG FM':'',note:document.getElementById('note').value,prodotti,totale_cessione:prodotti.reduce((s,p)=>s+p.totale,0).toFixed(2)};
-  // Genera l'HTML del PDF lato client e lo aggiunge al payload:
-  // il server Apps Script lo converte in PDF e lo invia via email.
+  
+  // Genera l'HTML del PDF
   payload.pdf_html = generaPdfHtml(payload);
-  if(!WEBHOOK){showOk(true,payload);return;}
+  
+  if(!WEBHOOK || WEBHOOK.includes('URL_EXEC')){alert('Manca l\'URL del Webhook!'); return;}
+  
   document.getElementById('overlay').classList.add('show');
   try{
-    // Usiamo Content-Type text/plain per evitare il preflight CORS su GAS;
-    // il body è comunque JSON valido e viene letto da e.postData.contents.
-    const resp=await fetch(WEBHOOK,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(payload)});
-    const result=await resp.json().catch(()=>({ok:true}));
-    if(result.ok===false) throw new Error(result.error||'Errore server');
+    const resp=await fetch(WEBHOOK,{method:'POST',mode: 'no-cors', headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(payload)});
+    // Dato che usiamo no-cors, non possiamo leggere la risposta JSON, ma l'invio avviene comunque.
     showOk(false,payload);
   }
-  catch(e){alert('Errore durante l\'invio: '+e.message+'\nRiprova o controlla la connessione.');}
+  catch(e){alert('Errore durante l\'invio: '+e.message);}
   finally{document.getElementById('overlay').classList.remove('show');}
 }
 
@@ -315,10 +316,8 @@ function loadLastOrder(){
     const raw=localStorage.getItem('lf_last_order');
     if(!raw)return;
     const o=JSON.parse(raw);
-    // Mostra nella success screen
     const el=document.getElementById('last-order-info');
     if(el)el.textContent='Ultimo ordine salvato: '+(o.ragione_sociale||'')+' — '+(o.data||'');
-    // Mostra il banner di ristampa nello step 0
     const bar=document.getElementById('reprint-bar');
     const lbl=document.getElementById('reprint-label');
     if(bar&&lbl){
@@ -328,32 +327,32 @@ function loadLastOrder(){
   }catch(e){}
 }
 
-// ── generaPdfHtml: restituisce l'HTML dell'ordine come stringa ─────────────
-// Usata sia da stampaPDF() (finestra browser) sia dal payload inviato al server
-// (campo pdf_html) perché Apps Script la converta in PDF e la invii via email.
 function generaPdfHtml(o){
   const prods=(o.prodotti||[]).filter(p=>p.pezzi>0);
-  const righe=prods.map(p=>`
+  const righe=prods.map(p=>{
+    const espLabel = p.espositore ? '<br><small style="color:#1a6b3c; font-weight:700;">+ ESPOSITORE DA BANCO</small>' : '';
+    return `
     <tr>
-      <td class="td-prod">${p.prodotto}</td>
+      <td class="td-prod">${p.prodotto}${espLabel}</td>
       <td class="td-num">${p.pezzi}</td>
       <td class="td-num">${p.omaggi||0}</td>
       <td class="td-num td-r"><strong>€ ${(p.totale||0).toFixed(2).replace('.',',')}</strong></td>
-    </tr>`).join('');
+    </tr>`;
+  }).join('');
+
   const _loc=(o.localita||'').trim();
   const _prov=(o.provincia||'').trim().toUpperCase();
   const _cliente=o.ragione_sociale||'';
   const _indir=(o.indirizzo||'')+(_loc&&_prov?' ('+_loc+') '+_prov:_prov?' ('+_prov+')':'');
   const pag=o.pagamento==='riba'?'Ri.Ba.':o.pagamento==='bonifico'?'Bonifico':(o.pagamento||'');
   const termine=o.termine||'';
+
   return `<!DOCTYPE html><html lang="it"><head><meta charset="UTF-8">
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Serif+Display&display=swap" rel="stylesheet">
   <style>
     *{margin:0;padding:0;box-sizing:border-box}
-    @page{size:A4 portrait;margin:10mm 13mm 10mm 13mm}
-    body{font-family:'DM Sans',sans-serif;background:white;font-size:14px;color:#111;
-         padding:0;width:184mm}
-    /* ── HEADER ── */
+    @page{size:A4 portrait;margin:10mm}
+    body{font-family:'DM Sans',sans-serif;background:white;font-size:14px;color:#111;padding:20px;width:100%}
     .header{border-bottom:2.5px solid #111;padding-bottom:9px;margin-bottom:9px}
     .header-top{display:flex;justify-content:space-between;align-items:flex-end}
     .logo{font-family:'DM Serif Display',serif;font-size:32px;line-height:1}
@@ -361,118 +360,37 @@ function generaPdfHtml(o){
     .head-meta{display:flex;justify-content:space-between;margin-top:7px}
     .lbl{font-size:10px;color:#888;text-transform:uppercase;letter-spacing:0.8px;margin-bottom:1px}
     .val{font-size:19px;font-weight:700}
-    /* ── SEZIONI ── */
-    .sec{font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;
-         color:#444;margin:7px 0 4px;border-bottom:1px solid #ccc;padding-bottom:3px}
-    /* ── DATI CLIENTE (2 colonne) ── */
+    .sec{font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#444;margin:7px 0 4px;border-bottom:1px solid #ccc;padding-bottom:3px}
     .cli-grid{display:grid;grid-template-columns:1fr 1fr;gap:0 18px}
-    .field{display:flex;gap:6px;margin-bottom:3px;align-items:baseline;font-size:17px}
-    .field .fl{font-weight:700;font-size:12px;min-width:116px;white-space:nowrap;color:#555}
-    .field .fv{font-size:17px;border-bottom:1px solid #ddd;flex:1;padding-bottom:1px}
+    .field{display:flex;gap:6px;margin-bottom:3px;align-items:baseline}
+    .field .fl{font-weight:700;font-size:12px;min-width:116px;color:#555}
+    .field .fv{font-size:17px;border-bottom:1px solid #ddd;flex:1}
     .field-wide{grid-column:1/-1}
-    /* ── TABELLA PRODOTTI ── */
     table{width:100%;border-collapse:collapse;margin-top:2px}
-    th{background:#f0f0f0;padding:5px 11px;font-size:11px;font-weight:700;color:#444;
-       text-transform:uppercase;letter-spacing:0.5px;
-       border-top:1.5px solid #aaa;border-bottom:1.5px solid #aaa;text-align:left}
+    th{background:#f0f0f0;padding:5px 11px;font-size:11px;font-weight:700;color:#444;text-transform:uppercase;border-top:1.5px solid #aaa;border-bottom:1.5px solid #aaa;text-align:left}
     th.th-c{text-align:center} th.th-r{text-align:right}
     .td-prod{padding:7px 11px;border-bottom:1px solid #e8e8e8;font-weight:700;font-size:17px}
     .td-num{padding:7px 11px;border-bottom:1px solid #e8e8e8;text-align:center;font-size:17px}
     .td-r{text-align:right!important}
-    /* ── PAGAMENTO ── */
-    .pay-wrap{display:flex;align-items:center;gap:28px;margin-top:5px;flex-wrap:wrap}
+    .pay-wrap{display:flex;align-items:center;gap:28px;margin-top:5px}
     .pay-item{display:flex;align-items:center;gap:8px;font-size:16px}
-    .box{width:17px;height:17px;border:1.5px solid #333;display:flex;align-items:center;
-         justify-content:center;font-size:13px;font-weight:700;flex-shrink:0}
-    .sep{width:1.5px;height:20px;background:#ccc;margin:0 4px}
-    /* ── SCONTO / TOTALE ── */
-    .totale-row{display:flex;align-items:center;gap:18px;margin-top:7px;flex-wrap:wrap}
+    .box{width:17px;height:17px;border:1.5px solid #333;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700}
+    .totale-row{display:flex;align-items:center;gap:18px;margin-top:7px}
     .sconto{font-size:19px;font-weight:700;border:2px solid #111;padding:5px 16px}
     .importo{font-size:19px;font-weight:700}
-    /* ── FIRMA ── */
     .firma-row{display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-top:12px}
-    .firma-block{border-top:1.5px solid #bbb;padding-top:5px;font-size:12px;color:#555;line-height:2.6}
+    .firma-block{border-top:1.5px solid #bbb;padding-top:5px;font-size:12px;color:#555}
     .firma-name{font-size:17px;font-weight:600;color:#111;margin-top:2px}
-    /* ── FOOTER ── */
-    .footer{margin-top:10px;font-size:10px;color:#bbb;text-align:center;
-            border-top:1px solid #e8e8e8;padding-top:5px}
-    @media print{
-      body{padding:0}
-      html,body{height:100%;page-break-inside:avoid}
-    }
+    .footer{margin-top:10px;font-size:10px;color:#bbb;text-align:center;border-top:1px solid #e8e8e8;padding-top:5px}
   </style>
   </head><body>
-
   <div class="header">
     <div class="header-top">
       <div><div class="logo">Liberfarma</div><div class="tagline">Raccolta ordini agenti</div></div>
-      <div style="text-align:right"><div class="lbl">Nr. Ordine</div><div class="val">#${o.nr_ordine||'—'}</div></div>
+      <div style="text-align:right"><div class="lbl">Data ordine</div><div class="val">${(o.data||'').split('-').reverse().join('/')}</div></div>
     </div>
     <div class="head-meta">
       <div><div class="lbl">Agente</div><div class="val">${o.agente||'—'}</div></div>
-      <div style="text-align:right"><div class="lbl">Data ordine</div><div class="val">${(o.data||'').split('-').reverse().join('/')}</div></div>
     </div>
   </div>
-
   <div class="sec">Dati Cliente</div>
-  <div class="cli-grid">
-    <div class="field field-wide"><span class="fl">Ragione Sociale:</span><span class="fv">${_cliente}</span></div>
-    <div class="field field-wide"><span class="fl">Indirizzo:</span><span class="fv">${_indir}</span></div>
-    <div class="field"><span class="fl">Telefono:</span><span class="fv">${o.telefono||''}</span></div>
-    <div class="field"><span class="fl">e-Mail:</span><span class="fv">${o.email||''}</span></div>
-    <div class="field"><span class="fl">Partita IVA / CF:</span><span class="fv">${o.piva||''}</span></div>
-    <div class="field"><span class="fl">SDI:</span><span class="fv">${o.sdi||''}</span></div>
-    <div class="field field-wide"><span class="fl">IBAN:</span><span class="fv">${o.iban||''}</span></div>
-  </div>
-
-  <div class="sec">Prodotti Ordinati</div>
-  <table>
-    <tr><th>Prodotto</th><th class="th-c">Pezzi pagati</th><th class="th-c">Omaggi</th><th class="th-r">Imponibile</th></tr>
-    ${righe}
-  </table>
-
-  <div class="sec">Pagamento</div>
-  <div class="pay-wrap">
-    <div class="pay-item"><div class="box">${pag==='Ri.Ba.'?'✕':''}</div> Ri.Ba.</div>
-    <div class="pay-item"><div class="box">${pag==='Bonifico'?'✕':''}</div> Bonifico bancario</div>
-    <div class="sep"></div>
-    <div class="pay-item"><div class="box">${termine.includes('30')?'✕':''}</div> 30 GG FM</div>
-    <div class="pay-item"><div class="box">${termine.includes('60')?'✕':''}</div> 60 GG FM</div>
-  </div>
-
-  <div class="totale-row">
-    <span class="sconto">Sconto Lordo: 50%</span>
-    <span class="importo">Imponibile totale: <strong>€ ${Number(o.totale_cessione||0).toFixed(2).replace('.',',')}</strong></span>
-  </div>
-
-  <div class="firma-row">
-    <div class="firma-block">
-      Nome e cognome agente<br>
-      <span class="firma-name">${o.agente||''}</span>
-    </div>
-    <div class="firma-block">
-      Firma agente<br>
-      <span style="font-size:13px;color:#bbb">_________________________________</span>
-    </div>
-  </div>
-
-  <div class="footer">Documento generato automaticamente — Liberfarma — ${(o.data||'').split('-').reverse().join('/')}</div>
-  <script>window.onload=function(){window.print();}<\/script>
-  </body></html>`;
-}
-
-function stampaPDF(o){
-  const win=window.open('','_blank');
-  win.document.write(generaPdfHtml(o));
-  win.document.close();
-}
-function showOk(demo,payload){
-  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
-  document.getElementById('success').classList.add('show');
-  document.getElementById('bar').style.display='none';
-  document.getElementById('success-msg').textContent=demo?'Ordine salvato (modalità demo).':'Ordine registrato nel foglio Google. ✓';
-  if(payload){try{localStorage.setItem('lf_last_order',JSON.stringify(payload));}catch(e){}}
-}
-</script>
-</body>
-</html>
