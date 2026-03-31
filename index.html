@@ -186,9 +186,12 @@ input:focus { outline:none; border-color:var(--green); }
     </div>
   </div>
 
-  <div class="bottom-bar" id="bar">
-    <button class="btn btn-back" id="btn-back" style="display:none" onclick="prev()">←</button>
-    <button class="btn btn-next" id="btn-next" onclick="next()">Avanti →</button>
+  <div class="bottom-bar" id="bar" style="flex-direction:column;gap:4px">
+    <div style="display:flex;gap:10px;width:100%">
+      <button class="btn btn-back" id="btn-back" style="display:none" onclick="prev()">←</button>
+      <button class="btn btn-next" id="btn-next" onclick="next()">Avanti →</button>
+    </div>
+    <div style="text-align:center;font-size:10px;color:#bbb;font-family:'Palatino Linotype',Palatino,serif;padding-bottom:2px">© Moroni 2026</div>
   </div>
 </div>
 
