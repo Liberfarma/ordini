@@ -160,12 +160,14 @@ input:focus { outline:none; border-color:var(--green); }
       <div class="radio-group">
         <div class="radio-card" id="pr-riba" onclick="selPay('riba')"><div class="radio-icon">🏦</div><div class="radio-label">Ri.Ba.</div><div class="radio-sub">Ricevuta bancaria</div></div>
         <div class="radio-card" id="pr-bonifico" onclick="selPay('bonifico')"><div class="radio-icon">💸</div><div class="radio-label">Bonifico</div><div class="radio-sub">Bancario</div></div>
+        <div class="radio-card" id="pr-contanti" onclick="selPay('contanti')"><div class="radio-icon">💵</div><div class="radio-label">Contanti</div><div class="radio-sub">Alla consegna</div></div>
       </div>
       <div class="sec-title">📅 Termini</div>
       <div class="radio-group">
-        <div class="radio-card" id="pr-30" onclick="selTermine('30')"><div class="radio-icon">📆</div><div class="radio-label">30 GG FM</div></div>
-        <div class="radio-card" id="pr-60" onclick="selTermine('60')"><div class="radio-icon">📅</div><div class="radio-label">60 GG FM</div></div>
+        <div class="radio-card" id="pr-30" onclick="selTermine('30')"><div class="radio-icon">📆</div><div class="radio-label">30 GG</div></div>
+        <div class="radio-card" id="pr-60" onclick="selTermine('60')"><div class="radio-icon">📅</div><div class="radio-label">60 GG</div></div>
       </div>
+      <div id="consegna-msg" style="display:none;background:#e8f5ee;border:1.5px solid var(--green);border-radius:11px;padding:12px 14px;font-size:14px;color:var(--green);font-weight:600;margin-bottom:16px">📦 Pagamento alla consegna</div>
       <div class="sec-title">📝 Note</div>
       <div class="field"><input type="text" id="note" placeholder="Note aggiuntive (opzionale)"></div>
     </div>
@@ -199,12 +201,12 @@ const PRODS = [
   {id:'libervision', name:'Libervision 30 Bust.', icon:'👁️', pp:49.1, iva:10, collirio:false},
   {id:'libervit',    name:'Libervit 30 Bust.',    icon:'🌿', pp:29.3, iva:10, collirio:false},
   {id:'miolut',      name:'Miolut 20 Stick',      icon:'🧪', pp:25.9, iva:10, collirio:false},
-  {id:'idramin',     name:'Idramin 20 Cpr',       icon:'💊', pp:25.0, iva:10, collirio:false},
-  {id:'cumaret',     name:'Cumaret 20 Cpr',       icon:'💊', pp:22.9, iva:10, collirio:false},
+  {id:'idramin',     name:'Idramin 20 Cps',       icon:'<svg width=\'26\' height=\'14\' viewBox=\'0 0 26 14\'><rect x=\'1\' y=\'1\' width=\'24\' height=\'12\' rx=\'6\' fill=\'white\' stroke=\'#7bc47f\' stroke-width=\'1.5\'/><rect x=\'1\' y=\'1\' width=\'13\' height=\'12\' rx=\'0\' fill=\'#c8e6c9\'/><rect x=\'1\' y=\'1\' width=\'7\' height=\'12\' rx=\'6\' fill=\'#c8e6c9\'/></svg>', pp:25.0, iva:10, collirio:false},
+  {id:'cumaret',     name:'Cumaret 20 Cpr',       icon:'<svg width=\'22\' height=\'22\' viewBox=\'0 0 22 22\'><circle cx=\'11\' cy=\'11\' r=\'9\' fill=\'#f5c518\' stroke=\'#c8a000\' stroke-width=\'1.5\'/><line x1=\'11\' y1=\'3\' x2=\'11\' y2=\'19\' stroke=\'#c8a000\' stroke-width=\'1.5\'/></svg>', pp:22.9, iva:10, collirio:false},
 ];
 PRODS.forEach(p=>{p.on=false;p.pz=0;p.om=0;p.esp=false;});
 const ST={step:0,pay:null,termine:null};
-const WEBHOOK='https://script.google.com/macros/s/AKfycbzuyAzP4P8OeYWKuRx3c5wn3tBthfX8VbO94olq0KSOI7R1QRdD2vTeFfB2dnlxCOIUNg/exec';
+const WEBHOOK='';
 
 function buildCard(p){
   const espHtml=p.collirio?`<div class="esp-row"><div><div class="esp-label">Espositore</div><div class="esp-sub">Da banco</div></div><div class="toggle" id="esp-${p.id}" onclick="event.stopPropagation();togEsp('${p.id}')"></div></div>`:'';
@@ -232,7 +234,15 @@ function togProd(id){const p=gp(id);p.on=!p.on;document.getElementById('t-'+id).
 function chQty(id,d){const p=gp(id);p.pz=Math.max(0,p.pz+d);document.getElementById('pz-'+id).textContent=p.pz;}
 function chOm(id,d){const p=gp(id);p.om=Math.max(0,(p.om||0)+d);document.getElementById('om-'+id).textContent=p.om;}
 function togEsp(id){const p=gp(id);p.esp=!p.esp;document.getElementById('esp-'+id).classList.toggle('on',p.esp);}
-function selPay(v){ST.pay=v;['riba','bonifico'].forEach(x=>document.getElementById('pr-'+x).classList.toggle('on',x===v));}
+function selPay(v){
+  ST.pay=v;
+  ['riba','bonifico','contanti'].forEach(x=>{const el=document.getElementById('pr-'+x);if(el)el.classList.toggle('on',x===v);});
+  const isC=v==='contanti';
+  ['30','60'].forEach(x=>{const el=document.getElementById('pr-'+x);if(el){el.style.opacity=isC?'0.35':'1';el.style.pointerEvents=isC?'none':'auto';}});
+  const msg=document.getElementById('consegna-msg');
+  if(msg)msg.style.display=isC?'block':'none';
+  if(isC){ST.termine=null;['30','60'].forEach(x=>{const el=document.getElementById('pr-'+x);if(el)el.classList.remove('on');});}
+}
 function selTermine(v){ST.termine=v;['30','60'].forEach(x=>document.getElementById('pr-'+x).classList.toggle('on',x===v));}
 
 function buildRecap(){
@@ -242,13 +252,14 @@ function buildRecap(){
   const rs = loc && prov ? rs_raw+' ('+loc+') '+prov : prov ? rs_raw+' ('+prov+')' : rs_raw;
   const data=document.getElementById('data_ordine').value||'—';
   const ag=document.getElementById('agente').value||'—';
-  const pag=ST.pay==='riba'?'Ri.Ba.':ST.pay==='bonifico'?'Bonifico':'—';
-  const ter=ST.termine?ST.termine+' GG FM':'—';
+  const pag=ST.pay==='riba'?'Ri.Ba.':ST.pay==='bonifico'?'Bonifico':ST.pay==='contanti'?'Contanti':'—';
+  const ter=ST.pay==='contanti'?'alla consegna':(ST.termine?ST.termine+' GG':'—');
   let html='';let tot=0;let totpz=0;
   PRODS.forEach(p=>{
     if(!p.on||p.pz===0)return;
     const om=p.om||0;
-    const val=+(p.pp*0.5*p.pz).toFixed(2);
+    const sc=ST.pay==='contanti'?0.49:0.5;
+    const val=+(p.pp*sc*p.pz).toFixed(2);
     tot+=val;totpz+=p.pz+om;
     html+=`<div class="recap-row"><span class="recap-key">${p.icon} ${p.name}</span><span class="recap-val">${p.pz}pz +${om}om<br><small style="font-weight:400;color:var(--muted)">€${val.toFixed(2)}</small></span></div>`;
   });
@@ -281,12 +292,21 @@ function render(){
 async function submit(){
   const prodotti=PRODS.filter(p=>p.on&&p.pz>0).map(p=>{
     const om=p.om||0;
-    return{prodotto:p.name,pezzi:p.pz,omaggi:om,cessione:+(p.pp*0.5).toFixed(2),totale:+(p.pp*0.5*p.pz).toFixed(2),espositore:p.esp};
+    const sc2=ST.pay==='contanti'?0.49:0.5;return{prodotto:p.name,pezzi:p.pz,omaggi:om,cessione:+(p.pp*sc2).toFixed(2),totale:+(p.pp*sc2*p.pz).toFixed(2),espositore:p.esp};
   });
-  const payload={data:document.getElementById('data_ordine').value,agente:document.getElementById('agente').value,ragione_sociale:document.getElementById('ragione_sociale').value,indirizzo:document.getElementById('indirizzo').value,telefono:document.getElementById('telefono').value,email:document.getElementById('email').value,piva:document.getElementById('piva').value,sdi:document.getElementById('sdi').value,iban:document.getElementById('iban').value,localita:document.getElementById('localita').value,provincia:document.getElementById('provincia').value.toUpperCase(),pagamento:ST.pay,termine:ST.termine?ST.termine+' GG FM':'',note:document.getElementById('note').value,prodotti,totale_cessione:prodotti.reduce((s,p)=>s+p.totale,0).toFixed(2)};
+  const payload={data:document.getElementById('data_ordine').value,agente:document.getElementById('agente').value,ragione_sociale:document.getElementById('ragione_sociale').value,indirizzo:document.getElementById('indirizzo').value,telefono:document.getElementById('telefono').value,email:document.getElementById('email').value,piva:document.getElementById('piva').value,sdi:document.getElementById('sdi').value,iban:document.getElementById('iban').value,localita:document.getElementById('localita').value,provincia:document.getElementById('provincia').value.toUpperCase(),pagamento:ST.pay,termine:ST.pay==='contanti'?'alla consegna':(ST.termine?ST.termine+' GG':''),note:document.getElementById('note').value,prodotti,totale_cessione:prodotti.reduce((s,p)=>s+p.totale,0).toFixed(2)};
   if(!WEBHOOK){showOk(true,payload);return;}
   document.getElementById('overlay').classList.add('show');
-  try{await fetch(WEBHOOK,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});showOk(false,payload);}
+  try{
+    const _local=WEBHOOK.includes('localhost');
+    const _opts={method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)};
+    if(!_local)_opts.mode='no-cors';
+    const _resp=await fetch(WEBHOOK,_opts);
+    let _nr=null;
+    try{if(_local){const _r=await _resp.json();if(_r.ordine)_nr=_r.ordine;}}catch(e2){}
+    if(_nr)payload.nr_ordine=_nr;
+    showOk(false,payload);
+  }
   catch(e){alert('Errore di rete. Riprova.');}
   finally{document.getElementById('overlay').classList.remove('show');}
 }
@@ -321,7 +341,7 @@ function stampaPDF(o){
   const prods=(o.prodotti||[]).filter(p=>p.pezzi>0);
   const righe=prods.map(p=>`
     <tr>
-      <td style="padding:14px;border-bottom:1px solid #e5e5e5"><div style="font-weight:700;font-size:18px">${p.prodotto}</div></td>
+      <td style="padding:14px;border-bottom:1px solid #e5e5e5"><div style="font-weight:700;font-size:18px">${p.prodotto}</div>${p.espositore?'<div style="font-size:13px;color:#555;margin-top:3px">+ Espositore da banco</div>':''}</td>
       <td style="padding:14px;border-bottom:1px solid #e5e5e5;text-align:center">${p.pezzi}</td>
       <td style="padding:14px;border-bottom:1px solid #e5e5e5;text-align:center">${p.omaggi||0}</td>
       <td style="padding:14px;border-bottom:1px solid #e5e5e5;text-align:right"><strong>€ ${(p.totale||0).toFixed(2).replace('.',',')}</strong></td>
@@ -332,7 +352,7 @@ function stampaPDF(o){
   const _cliente = o.ragione_sociale || '';
   // Indirizzo con provincia/localita in fondo
   const _indir = (o.indirizzo||'') + (_loc && _prov ? ' ('+_loc+') '+_prov : _prov ? ' ('+_prov+')' : '');
-  const pag=o.pagamento==='riba'?'Ri.Ba.':o.pagamento==='bonifico'?'Bonifico':(o.pagamento||'');
+  const pag=o.pagamento==='riba'?'Ri.Ba.':o.pagamento==='bonifico'?'Bonifico':o.pagamento==='contanti'?'Contanti':(o.pagamento||'');
   const termine=o.termine||'';
   const win=window.open('','_blank');
   win.document.write(`<!DOCTYPE html><html lang="it"><head><meta charset="UTF-8">
@@ -348,18 +368,18 @@ function stampaPDF(o){
     .val{font-size:15px;font-weight:600}
     .section-title{font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#333;margin:10px 0 6px;border-bottom:1px solid #ccc;padding-bottom:4px}
     .field{display:flex;gap:6px;margin-bottom:5px;align-items:baseline}
-    .field .fl{font-weight:700;font-size:12px;min-width:130px;white-space:nowrap}
-    .field .fv{font-size:12px;border-bottom:1px solid #ddd;flex:1;padding-bottom:2px}
+    .field .fl{font-weight:700;font-size:14px;min-width:130px;white-space:nowrap}
+    .field .fv{font-size:14px;border-bottom:1px solid #ddd;flex:1;padding-bottom:2px}
     table{width:100%;border-collapse:collapse}
-    th{background:#f4f4f4;padding:6px 10px;text-align:left;font-size:9px;font-weight:700;color:#555;text-transform:uppercase;border-top:1px solid #bbb;border-bottom:1px solid #bbb}
+    th{background:#f4f4f4;padding:6px 10px;text-align:left;font-size:11px;font-weight:700;color:#555;text-transform:uppercase;border-top:1px solid #bbb;border-bottom:1px solid #bbb}
     th:not(:first-child){text-align:center}
     th:last-child{text-align:right}
-    td{padding:7px 10px;border-bottom:1px solid #eee;font-size:13px}
+    td{padding:7px 10px;border-bottom:1px solid #eee;font-size:15px}
     .pay-row{display:flex;gap:20px;margin-top:8px;flex-wrap:wrap}
-    .pay-item{display:flex;align-items:center;gap:8px;font-size:13px}
+    .pay-item{display:flex;align-items:center;gap:8px;font-size:15px}
     .box{width:16px;height:16px;border:1.5px solid #333;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0}
-    .sconto{font-size:17px;font-weight:700;border:2px solid #111;padding:6px 14px;display:inline-block;margin:10px 0 6px}
-    .importo{font-size:15px;margin-left:12px}
+    .sconto{font-size:19px;font-weight:700;border:2px solid #111;padding:6px 14px;display:inline-block;margin:10px 0 6px}
+    .importo{font-size:17px;margin-left:12px}
     .firma-row{display:grid;grid-template-columns:1fr 1fr;gap:30px;margin-top:20px}
     .firma-block{border-top:1px solid #bbb;padding-top:6px;font-size:11px;color:#555;line-height:2.5}
     .footer{margin-top:10px;font-size:9px;color:#aaa;text-align:center;border-top:1px solid #ddd;padding-top:6px}
@@ -393,12 +413,13 @@ function stampaPDF(o){
   <div class="pay-row">
     <div class="pay-item"><div class="box">${pag==='Ri.Ba.'?'✕':''}</div> Ri.Ba.</div>
     <div class="pay-item"><div class="box">${pag==='Bonifico'?'✕':''}</div> Bonifico bancario</div>
+    <div class="pay-item"><div class="box">${pag==='Contanti'?'✕':''}</div> Contanti / Alla consegna</div>
   </div>
   <div class="pay-row" style="margin-top:10px">
-    <div class="pay-item"><div class="box">${termine.includes('30')?'✕':''}</div> 30 GG FM</div>
-    <div class="pay-item"><div class="box">${termine.includes('60')?'✕':''}</div> 60 GG FM</div>
+    <div class="pay-item"><div class="box">${termine.includes('30')?'✕':''}</div> 30 GG</div>
+    <div class="pay-item"><div class="box">${termine.includes('60')?'✕':''}</div> 60 GG</div>
   </div>
-  <div><span class="sconto">Sconto Lordo: 50%</span><span class="importo">Imponibile: <strong>€ ${Number(o.totale_cessione||0).toFixed(2).replace('.',',')}</strong></span></div>
+  <div><span class="sconto">${pag==='Contanti'?'Sconto Lordo: 50% - 2%':'Sconto Lordo: 50%'}</span><span class="importo">Imponibile: <strong>€ ${Number(o.totale_cessione||0).toFixed(2).replace('.',',')}</strong></span></div>
   <div class="firma-row">
     <div class="firma-block">Nome e cognome agente<br><br>${o.agente||''}</div>
     <div class="firma-block">Firma agente<br><br>_______________________</div>
