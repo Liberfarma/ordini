@@ -206,7 +206,7 @@ const PRODS = [
 ];
 PRODS.forEach(p=>{p.on=false;p.pz=0;p.om=0;p.esp=false;});
 const ST={step:0,pay:null,termine:null};
-const WEBHOOK='https://script.google.com/macros/s/AKfycbzil-ZSmQrjsU41a7cSQO66N0PFJasr9XORU6T9aLHDPo5doTCKVgVltYsSB4LvZYuX/exec';
+const WEBHOOK='https://script.google.com/macros/s/AKfycbxjdS4fVYOwSKRtQD1cfEzgNUZrDA-UFZwYYDNfaDGCaMy_qa9fr8xNSEMrFHXDMDpF/exec';
 
 function buildCard(p){
   const espHtml=p.collirio?`<div class="esp-row"><div><div class="esp-label">Espositore</div><div class="esp-sub">Da banco</div></div><div class="toggle" id="esp-${p.id}" onclick="event.stopPropagation();togEsp('${p.id}')"></div></div>`:'';
@@ -298,10 +298,17 @@ async function submit(){
   if(!WEBHOOK){showOk(true,payload);return;}
   document.getElementById('overlay').classList.add('show');
   try{
-    const _resp=await fetch(WEBHOOK,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify(payload)});
-    let _nr=null;
-    try{const _r=await _resp.json();if(_r&&_r.ordine)_nr=_r.ordine;}catch(e2){}
-    if(_nr)payload.nr_ordine=_nr;
+    // Step 1: GET per leggere il numero ordine progressivo (no CORS issues)
+    let _nr=1;
+    try{
+      const _ag=encodeURIComponent((payload.agente||'').trim());
+      const _getResp=await fetch(WEBHOOK+'?action=ordineNr&agente='+_ag);
+      const _getJson=await _getResp.json();
+      if(_getJson&&_getJson.ordine)_nr=_getJson.ordine;
+    }catch(e3){}
+    payload.nr_ordine=_nr;
+    // Step 2: POST dati ordine con no-cors
+    await fetch(WEBHOOK,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain'},body:JSON.stringify(payload)});
     showOk(false,payload);
   }
   catch(e){alert('Errore di rete. Riprova.');}
