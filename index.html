@@ -206,7 +206,7 @@ const PRODS = [
 ];
 PRODS.forEach(p=>{p.on=false;p.pz=0;p.om=0;p.esp=false;});
 const ST={step:0,pay:null,termine:null};
-const WEBHOOK='https://script.google.com/macros/s/AKfycbwaax1B8WYmghtZLY2ifqLCc18_LQXKsP_XyB0gr90lfUxcrb1LiYMw2vM7x0LvC3VX/exec';
+const WEBHOOK='https://script.google.com/macros/s/AKfycbzil-ZSmQrjsU41a7cSQO66N0PFJasr9XORU6T9aLHDPo5doTCKVgVltYsSB4LvZYuX/exec';
 
 function buildCard(p){
   const espHtml=p.collirio?`<div class="esp-row"><div><div class="esp-label">Espositore</div><div class="esp-sub">Da banco</div></div><div class="toggle" id="esp-${p.id}" onclick="event.stopPropagation();togEsp('${p.id}')"></div></div>`:'';
@@ -298,7 +298,7 @@ async function submit(){
   if(!WEBHOOK){showOk(true,payload);return;}
   document.getElementById('overlay').classList.add('show');
   try{
-    const _resp=await fetch(WEBHOOK,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+    const _resp=await fetch(WEBHOOK,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify(payload)});
     let _nr=null;
     try{const _r=await _resp.json();if(_r&&_r.ordine)_nr=_r.ordine;}catch(e2){}
     if(_nr)payload.nr_ordine=_nr;
