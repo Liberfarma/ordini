@@ -206,7 +206,7 @@ const PRODS = [
 ];
 PRODS.forEach(p=>{p.on=false;p.pz=0;p.om=0;p.esp=false;});
 const ST={step:0,pay:null,termine:null};
-const WEBHOOK='https://script.google.com/macros/s/AKfycbxjszV2z5CVoOVJbJKEZFJ9Pb1b07dseH8g0jR9VhrumvkKx-KMEx9YEYd2MB840rx6rw/exec';
+const WEBHOOK='https://script.google.com/macros/s/AKfycbzT4Ki1gpQ9MZdQ23XPorZmx_YgUV0uainkkjycX_nLZEAepzCaZJyxYNFkq2vO1CJSBQ/exec';
 
 function buildCard(p){
   const espHtml=p.collirio?`<div class="esp-row"><div><div class="esp-label">Espositore</div><div class="esp-sub">Da banco</div></div><div class="toggle" id="esp-${p.id}" onclick="event.stopPropagation();togEsp('${p.id}')"></div></div>`:'';
