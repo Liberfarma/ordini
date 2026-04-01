@@ -427,6 +427,7 @@ function stampaPDF(o){
     <div class="pay-item"><div class="box">${termine.includes('60')?'✕':''}</div> 60 GG</div>
   </div>
   <div><span class="sconto">${pag==='Contanti'?'Sconto Lordo: 50% - 2%':'Sconto Lordo: 50%'}</span><span class="importo">Imponibile: <strong>€ ${Number(o.totale_cessione||0).toFixed(2).replace('.',',')}</strong></span></div>
+  ${o.note?'<div style="margin:10px 0;font-size:13px"><strong>Note:</strong> '+o.note+'</div>':''}
   <div class="firma-row">
     <div class="firma-block">Nome e cognome agente<br><br>${o.agente||''}</div>
     <div class="firma-block">Firma agente<br><br>_______________________</div>
